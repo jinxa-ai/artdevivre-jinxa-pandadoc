@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HubSpot × PandaDoc — Backlog Client</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0f1a;
+    color: #f1f5f9;
+    font-family: Georgia, 'Times New Roman', serif;
+    padding: 40px 24px;
+    min-height: 100vh;
+  }
+  .container { max-width: 820px; margin: 0 auto; }
+
+  /* Header */
+  .header { margin-bottom: 40px; }
+  .header-meta {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+  }
+  .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #22c55e; box-shadow: 0 0 8px #22c55e;
+  }
+  .header-meta span {
+    font-size: 11px; color: #475569; letter-spacing: .15em;
+    text-transform: uppercase; font-family: monospace;
+  }
+  h1 { font-size: 28px; font-weight: 400; letter-spacing: -.02em; margin-bottom: 6px; }
+  .header-sub { color: #475569; font-size: 14px; }
+
+  /* Filters */
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 32px; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid #1e293b;
+    background: transparent; color: #475569; font-size: 12px; font-weight: 500;
+    cursor: pointer; transition: all .15s; font-family: monospace;
+  }
+  .filter-btn:hover { border-color: #334155; color: #94a3b8; }
+  .filter-btn.active { }
+
+  /* Sprint block */
+  .sprint { margin-bottom: 36px; }
+  .sprint-header {
+    display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 16px; padding-bottom: 12px;
+    border-bottom: 1px solid #1e293b;
+  }
+  .sprint-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; font-family: monospace;
+  }
+  .sprint-title { font-size: 16px; font-weight: 400; }
+  .sprint-count { font-size: 11px; color: #334155; font-family: monospace; margin-left: auto; }
+  .sprint-sub { color: #475569; font-size: 12px; margin-bottom: 14px; font-style: italic; }
+
+  /* Task card */
+  .task {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: opacity .2s;
+    overflow: hidden;
+  }
+  .task.done { opacity: .45; }
+  .task-header {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; cursor: pointer;
+  }
+  .task-check {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 2px solid #334155; background: transparent;
+    cursor: pointer; flex-shrink: 0; margin-top: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s;
+  }
+  .task-check svg { display: none; }
+  .task.done .task-check svg { display: block; }
+  .task-meta { flex: 1; min-width: 0; }
+  .task-id-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  .task-id { font-size: 11px; color: #475569; font-family: monospace; font-weight: 600; }
+  .task-title { font-size: 14px; font-weight: 500; }
+  .task.done .task-title { text-decoration: line-through; color: #475569; }
+  .badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .chevron {
+    color: #475569; font-size: 11px; flex-shrink: 0;
+    margin-top: 4px; transition: transform .2s; user-select: none;
+  }
+  .task.open .chevron { transform: rotate(180deg); }
+
+  /* Task detail */
+  .task-detail {
+    display: none;
+    padding: 14px 16px 16px 48px;
+    border-top: 1px solid #1e293b;
+  }
+  .task.open .task-detail { display: block; }
+  .task-desc { color: #94a3b8; font-size: 13px; line-height: 1.6; margin-bottom: 14px; }
+  .tests-block {
+    background: #0f172a; border-radius: 6px;
+    padding: 12px 14px; border: 1px solid #1e293b;
+  }
+  .tests-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; color: #475569; margin-bottom: 8px;
+  }
+  .test-row { display: flex; gap: 8px; margin-bottom: 4px; }
+  .test-arrow { color: #22d3ee; font-size: 12px; margin-top: 1px; flex-shrink: 0; }
+  .test-text { color: #64748b; font-size: 12px; line-height: 1.5; }
+
+  /* Future scope */
+  .future-task {
+    background: #0a0f1a; border: 1px dashed #1e293b;
+    border-radius: 8px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .future-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+  .future-title { font-size: 14px; color: #64748b; font-weight: 500; }
+  .feasibility { font-size: 11px; color: #22c55e; }
+  .future-desc { color: #334155; font-size: 12px; line-height: 1.5; margin-bottom: 6px; }
+  .future-note { color: #334155; font-size: 11px; font-style: italic; }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid #1e293b; padding-top: 20px;
+    display: flex; justify-content: space-between;
+    align-items: center; flex-wrap: wrap; gap: 8px;
+  }
+  .footer-brand { font-size: 11px; color: #334155; font-family: monospace; }
+  .footer-dots { display: flex; gap: 16px; }
+  .footer-dot-item { display: flex; align-items: center; gap: 6px; }
+  .footer-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .footer-dot-label { font-size: 10px; color: #334155; font-family: monospace; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="header-meta">
+      <div class="dot"></div>
+      <span>Projet actif · Clôture 13 mars</span>
+    </div>
+    <h1>HubSpot × PandaDoc — Backlog Client</h1>
+    <p class="header-sub">14 tâches · 4 sprints · classées par ordre de complexité croissante</p>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">Tous</button>
+    <button class="filter-btn" data-filter="sprint-1" onclick="setFilter('sprint-1', this)">Sprint 1</button>
+    <button class="filter-btn" data-filter="sprint-2" onclick="setFilter('sprint-2', this)">Sprint 2</button>
+    <button class="filter-btn" data-filter="sprint-3" onclick="setFilter('sprint-3', this)">Sprint 3</button>
+    <button class="filter-btn" data-filter="sprint-4" onclick="setFilter('sprint-4', this)">Sprint 4</button>
+    <button class="filter-btn" data-filter="futur" onclick="setFilter('futur', this)">Futur scope</button>
+  </div>
+
+  <!-- SPRINT 1 -->
+  <div class="sprint" data-sprint="sprint-1">
+    <div class="sprint-header">
+      <span class="sprint-label" style="color:#22c55e">Sprint 1</span>
+      <span class="sprint-title">Contenu &amp; Template</span>
+      <span class="sprint-count">4 tâches</span>
+    </div>
+    <p class="sprint-sub">Modifications statiques dans les templates PandaDoc (UI uniquement)</p>
+
+    <div class="task" style="border-left:3px solid #22c55e">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#22c55e')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S1-1</span>
+            <span class="task-title">Uniformiser le terme "Occupant tiers"</span>
+          </div>
+          <span class="badge" style="background:#f9731622;color:#f97316;border:1px solid #f9731644">HubSpot + PandaDoc</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer toutes les occurrences de "occupant" et "bénéficiaire effectif" par "Occupant tiers" dans les deux templates de contrat (proprio + client) et dans la propriété HubSpot correspondante.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Recherche "occupant" dans les templates → 0 résultat hors "Occupant tiers"</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Recherche "bénéficiaire effectif" → 0 résultat</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Label affiché dans HubSpot = "Occupant tiers"</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #22c55e">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#22c55e')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S1-2</span>
+            <span class="task-title">Uniformiser la police dans PandaDoc</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Aligner la police et la taille de tous les champs manuels (calendrier de paiement) sur celle des champs automatisés dans les deux templates.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Saisir manuellement dans le calendrier de paiement → police et taille identiques aux champs auto</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Valider sur les deux templates (proprio &amp; client)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #22c55e">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#22c55e')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S1-3</span>
+            <span class="task-title">Insérer la liste des équipements (FR/EN)</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Dans la section "équipements" du contrat client, insérer la liste bilingue : Piscine chauffée / Heated pool • Jacuzzi / Hot tub • Salle de sport / Private gym • Sauna ou hammam / Sauna or steam room • Transats / Sun loungers • Salle de massage / Massage room • Climatisation / AC • Coffre-fort / Safe • Smart TV • Système audio / Premium audio • Cinéma maison / Home cinema • Salle de jeux / Games room • Wi-Fi haut débit / High-speed Wi-Fi</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Section "équipements" visible dans le template</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">13 items présents en FR et EN</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Mise en page lisible (bullets alignés)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #22c55e">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#22c55e')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S1-4</span>
+            <span class="task-title">Insérer la liste des services inclus (FR/EN)</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Insérer AU-DESSUS de "services supplémentaires" les 4 services fixes bilingues : Ménage 6j/7 / Housekeeping 6d/7 • Technicien piscine 1×/sem / Pool technician 1×/week • Jardinier 1×/sem / Gardener 1×/week • Concierge dédié 8h-22h / Dedicated concierge 8am-10pm</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Section positionnée avant "services supplémentaires"</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">4 items FR/EN correctement affichés</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Aucune interférence avec les champs dynamiques existants</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRINT 2 -->
+  <div class="sprint" data-sprint="sprint-2">
+    <div class="sprint-header">
+      <span class="sprint-label" style="color:#3b82f6">Sprint 2</span>
+      <span class="sprint-title">Nommage automatique des documents</span>
+      <span class="sprint-count">4 tâches</span>
+    </div>
+    <p class="sprint-sub">Configuration des tokens de nommage dans les deux templates PandaDoc</p>
+
+    <div class="task" style="border-left:3px solid #3b82f6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#3b82f6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S2-1</span>
+            <span class="task-title">Renommage automatique — Contrat proprio</span>
+          </div>
+          <span class="badge" style="background:#8b5cf622;color:#8b5cf6;border:1px solid #8b5cf644">PandaDoc — Contrat proprio</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer le nom du document (actuellement = nom du deal) par : CONTRACT [NOM OWNER] - [VILLA XX] - DU [XX MOIS] AU [XX MOIS]. Mapper les variables HubSpot : nom propriétaire, nom villa, date d'arrivée, date de départ.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Générer un contrat proprio depuis un deal test</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Nom du fichier = "CONTRACT Dupont - Villa Rosa - DU 1 JUILLET AU 15 JUILLET"</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Variables non-nulles dans HubSpot → aucun champ vide dans le nom</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #3b82f6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#3b82f6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S2-2</span>
+            <span class="task-title">Renommage automatique — Contrat client</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer le nom du document (actuellement = nom du deal) par : CONTRACT [NOM CLIENT] - [VILLA XX] - DU [XX MOIS] AU [XX MOIS]. Mapper les variables HubSpot : nom client, nom villa, date d'arrivée, date de départ.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Générer un contrat client depuis un deal test</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Nom du fichier = "CONTRACT Smith - Villa Blue - DU 10 AOÛT AU 20 AOÛT"</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Variables non-nulles dans HubSpot → aucun champ vide</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #3b82f6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#3b82f6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S2-3</span>
+            <span class="task-title">Automatiser le nom du propriétaire avant signature</span>
+          </div>
+          <span class="badge" style="background:#8b5cf622;color:#8b5cf6;border:1px solid #8b5cf644">PandaDoc — Contrat proprio</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer les 2 lignes remplissables manuellement (nom propriétaire au-dessus de la signature) par un champ dynamique mappé sur la propriété "Nom du propriétaire" dans HubSpot.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Contrat généré → champ nom pré-rempli automatiquement</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Les 2 lignes manuelles ne sont plus présentes</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Tester avec deal sans nom propriétaire → vérifier comportement (vide ou fallback)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #3b82f6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#3b82f6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S2-4</span>
+            <span class="task-title">Automatiser le nom du client avant signature</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer les 2 lignes remplissables manuellement (nom client au-dessus de la signature) par un champ dynamique mappé sur Prénom + Nom du contact HubSpot lié au deal.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Contrat généré → champ nom client pré-rempli automatiquement</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Les 2 lignes manuelles ne sont plus présentes</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Tester avec contact sans nom → vérifier comportement</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRINT 3 -->
+  <div class="sprint" data-sprint="sprint-3">
+    <div class="sprint-header">
+      <span class="sprint-label" style="color:#f59e0b">Sprint 3</span>
+      <span class="sprint-title">Formats &amp; Champs dynamiques</span>
+      <span class="sprint-count">3 tâches</span>
+    </div>
+    <p class="sprint-sub">Devise, dates littérales et calendrier de paiement automatisé</p>
+
+    <div class="task" style="border-left:3px solid #f59e0b">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#f59e0b')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S3-1</span>
+            <span class="task-title">Insérer les devises dans les montants ($ / €)</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Pour USD : format $2,000 (symbole avant, séparateur virgule). Pour EUR : format 2 000 € (espace insécable, symbole après). Vérifier tous les champs montants dans les deux templates.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Contrat USD → affichage $2,000</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Contrat EUR → affichage 2 000 €</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Vérifier tous les champs : loyer, taxe séjour, frais service, dépôt, acompte, solde</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #f59e0b">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#f59e0b')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S3-2</span>
+            <span class="task-title">Format de date en toutes lettres</span>
+          </div>
+          <span class="badge" style="background:#6366f122;color:#6366f1;border:1px solid #6366f144">PandaDoc</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Remplacer le format numérique (ex. 07/08/2025) par un format littéral non-ambigu (ex. 7 août 2025 / July 7, 2025) pour les dates d'arrivée, de départ et les échéances. Vérifier la locale selon la langue du contrat.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Dates d'arrivée et départ affichées en toutes lettres</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Aucune date au format MM/DD ou DD/MM dans les deux templates</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Tester avec client américain → format anglais confirmé</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #f59e0b">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#f59e0b')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S3-3</span>
+            <span class="task-title">Automatiser les champs "dû le" du calendrier de paiement</span>
+          </div>
+          <span class="badge" style="background:#f9731622;color:#f97316;border:1px solid #f9731644">PandaDoc + HubSpot — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Mapper les champs "dû le" du calendrier de paiement PandaDoc sur les propriétés "modalités de paiement" de la fiche deal HubSpot. Identifier les propriétés HubSpot existantes ou à créer pour chaque échéance.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Renseigner les modalités dans HubSpot → champ "dû le" pré-rempli dans le contrat</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Tester avec 2 ou 3 échéances → toutes les lignes correctement mappées</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Champ vide dans HubSpot → ligne vide sans erreur</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SPRINT 4 -->
+  <div class="sprint" data-sprint="sprint-4">
+    <div class="sprint-header">
+      <span class="sprint-label" style="color:#8b5cf6">Sprint 4</span>
+      <span class="sprint-title">Formules HubSpot &amp; Automatisations</span>
+      <span class="sprint-count">3 tâches</span>
+    </div>
+    <p class="sprint-sub">Propriétés calculées et intégration dans les contrats clients</p>
+
+    <div class="task" style="border-left:3px solid #8b5cf6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#8b5cf6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S4-1</span>
+            <span class="task-title">Créer la propriété "Total à encaisser"</span>
+          </div>
+          <span class="badge" style="background:#f9731622;color:#f97316;border:1px solid #f9731644">HubSpot — Deal</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Créer une propriété de type Formule sur l'objet Deal : Total à encaisser = Loyer brut + Taxe de séjour + Frais de service + Dépôt de garantie. Ajouter en dernière position dans la vue deal.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Propriété visible en dernière position dans la fiche deal</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Renseigner les 4 composantes → Total calculé automatiquement</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Modifier une valeur → Total mis à jour en temps réel</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #8b5cf6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#8b5cf6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S4-2</span>
+            <span class="task-title">Propriété "Acompte demandé" (30%) → contrat client</span>
+          </div>
+          <span class="badge" style="background:#f9731622;color:#f97316;border:1px solid #f9731644">HubSpot + PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Configurer la propriété "Acompte demandé" avec la formule : Total à encaisser × 0.3. Mapper dans le contrat client PandaDoc.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Acompte = Total × 0.3 calculé automatiquement</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Montant affiché dans le contrat client avec devise</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Modifier le Total → Acompte recalculé → contrat régénéré avec la bonne valeur</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="task" style="border-left:3px solid #8b5cf6">
+      <div class="task-header" onclick="toggleTask(this)">
+        <button class="task-check" style="border-color:#334155" onclick="toggleDone(event,this,'#8b5cf6')">
+          <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="task-meta">
+          <div class="task-id-row">
+            <span class="task-id">S4-3</span>
+            <span class="task-title">Propriété "Solde total demandé" → contrat client</span>
+          </div>
+          <span class="badge" style="background:#f9731622;color:#f97316;border:1px solid #f9731644">HubSpot + PandaDoc — Contrat client</span>
+        </div>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="task-detail">
+        <p class="task-desc">Configurer la propriété "Solde total demandé" avec la formule : Total à encaisser - Acompte demandé. Mapper dans le contrat client PandaDoc.</p>
+        <div class="tests-block">
+          <div class="tests-label">✓ Tests d'acceptance</div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Solde = Total - Acompte calculé automatiquement</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Montant affiché dans le contrat client avec devise</span></div>
+          <div class="test-row"><span class="test-arrow">→</span><span class="test-text">Vérifier cohérence : Acompte + Solde = Total à encaisser</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUTUR -->
+  <div class="sprint" data-sprint="futur">
+    <div class="sprint-header">
+      <span class="sprint-label" style="color:#475569">Backlog futur</span>
+      <span class="sprint-title" style="color:#475569">Post-13 mars — Étude de faisabilité</span>
+      <span class="sprint-count">2 tâches</span>
+    </div>
+
+    <div class="future-task">
+      <div class="future-row">
+        <span class="task-id">F-1</span>
+        <span class="future-title">"Nombre de nuitées" calculé automatiquement</span>
+        <span class="badge" style="background:#47556922;color:#475569;border:1px solid #47556944">HubSpot + PandaDoc</span>
+        <span class="feasibility">✅ Faisable</span>
+      </div>
+      <p class="future-desc">Formule HubSpot : Date de départ − Date d'arrivée = nombre de nuitées. Mapper dans les contrats comme champ dynamique.</p>
+      <p class="future-note">À planifier après le 13 mars — hors scope mois de support actuel.</p>
+    </div>
+
+    <div class="future-task">
+      <div class="future-row">
+        <span class="task-id">F-2</span>
+        <span class="future-title">Deal → "Contrat signé" quand PandaDoc signé</span>
+        <span class="badge" style="background:#47556922;color:#475569;border:1px solid #47556944">PandaDoc + HubSpot Workflow</span>
+        <span class="feasibility">✅ Faisable</span>
+      </div>
+      <p class="future-desc">Via webhook PandaDoc (événement document.completed) ou intégration native HubSpot-PandaDoc : trigger qui déplace automatiquement le deal dans la colonne "Contrat signé" du pipeline.</p>
+      <p class="future-note">À planifier après le 13 mars — étudier si natif ou via Make/webhook.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span class="footer-brand">JINXA EURL · Support mensuel</span>
+    <div class="footer-dots">
+      <div class="footer-dot-item"><div class="footer-dot" style="background:#22c55e"></div><span class="footer-dot-label">4 tâches</span></div>
+      <div class="footer-dot-item"><div class="footer-dot" style="background:#3b82f6"></div><span class="footer-dot-label">4 tâches</span></div>
+      <div class="footer-dot-item"><div class="footer-dot" style="background:#f59e0b"></div><span class="footer-dot-label">3 tâches</span></div>
+      <div class="footer-dot-item"><div class="footer-dot" style="background:#8b5cf6"></div><span class="footer-dot-label">3 tâches</span></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function toggleTask(header) {
+    const task = header.closest('.task');
+    task.classList.toggle('open');
+  }
+
+  function toggleDone(e, btn, color) {
+    e.stopPropagation();
+    const task = btn.closest('.task');
+    task.classList.toggle('done');
+    if (task.classList.contains('done')) {
+      btn.style.background = color;
+      btn.style.borderColor = color;
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = '#334155';
+    }
+  }
+
+  function setFilter(filter, el) {
+    document.querySelectorAll('.filter-btn').forEach(b => {
+      b.classList.remove('active');
+      b.style.borderColor = '#1e293b';
+      b.style.color = '#475569';
+      b.style.background = 'transparent';
+    });
+    el.classList.add('active');
+    el.style.borderColor = '#94a3b8';
+    el.style.color = '#f1f5f9';
+    el.style.background = '#94a3b811';
+
+    document.querySelectorAll('.sprint').forEach(s => {
+      if (filter === 'all') {
+        s.style.display = 'block';
+      } else {
+        s.style.display = s.dataset.sprint === filter ? 'block' : 'none';
+      }
+    });
+  }
+
+  // init active style on "Tous"
+  const allBtn = document.querySelector('[data-filter="all"]');
+  allBtn.style.borderColor = '#94a3b8';
+  allBtn.style.color = '#f1f5f9';
+  allBtn.style.background = '#94a3b811';
+</script>
+</body>
+</html>
