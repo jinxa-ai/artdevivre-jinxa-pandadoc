@@ -593,6 +593,41 @@
 </div>
 
 <script>
+  // --- Persistance localStorage ---
+  const STORAGE_KEY = 'backlog-task-states';
+
+  function loadStates() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  function saveStates(states) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(states));
+  }
+
+  function getTaskId(task) {
+    const el = task.querySelector('.task-id');
+    return el ? el.textContent.trim() : null;
+  }
+
+  function applyDoneState(task, color) {
+    const btn = task.querySelector('.task-check');
+    task.classList.add('done');
+    btn.style.background = color;
+    btn.style.borderColor = color;
+  }
+
+  function restoreStates() {
+    const states = loadStates();
+    document.querySelectorAll('.task').forEach(task => {
+      const id = getTaskId(task);
+      if (id && states[id]) {
+        const color = task.style.borderLeftColor || '#22c55e';
+        applyDoneState(task, color);
+      }
+    });
+  }
+
   function toggleTask(header) {
     const task = header.closest('.task');
     task.classList.toggle('open');
@@ -602,13 +637,21 @@
     e.stopPropagation();
     const task = btn.closest('.task');
     task.classList.toggle('done');
+
+    const id = getTaskId(task);
+    const states = loadStates();
+
     if (task.classList.contains('done')) {
       btn.style.background = color;
       btn.style.borderColor = color;
+      if (id) states[id] = true;
     } else {
       btn.style.background = 'transparent';
       btn.style.borderColor = '#334155';
+      if (id) delete states[id];
     }
+
+    saveStates(states);
   }
 
   function setFilter(filter, el) {
@@ -632,11 +675,14 @@
     });
   }
 
-  // init active style on "Tous"
+  // Init
   const allBtn = document.querySelector('[data-filter="all"]');
   allBtn.style.borderColor = '#94a3b8';
   allBtn.style.color = '#f1f5f9';
   allBtn.style.background = '#94a3b811';
+
+  // Restaurer les cases cochées au chargement
+  restoreStates();
 </script>
 </body>
 </html>
